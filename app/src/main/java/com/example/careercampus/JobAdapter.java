@@ -1,0 +1,228 @@
+package com.example.careercampus;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.DatabaseError;
+import com.google.gson.Gson;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
+
+    private Context context;
+    private List<JobModel> jobList;
+    private DatabaseReference usersRef, jobsRef; // Firebase references for fetching data
+    private boolean isPermissionGranted = false;
+
+    public JobAdapter(Context context, List<JobModel> jobList) {
+        this.context = context;
+        this.jobList = jobList;
+        this.usersRef = FirebaseDatabase.getInstance().getReference("Users");
+        this.jobsRef = FirebaseDatabase.getInstance().getReference("jobs");
+    }
+    public void setPermissionGranted(boolean granted) {
+        isPermissionGranted = granted;
+    }
+
+    @NonNull
+    @Override
+    public JobViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(context).inflate(R.layout.job_item, parent, false);
+        return new JobViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull JobViewHolder holder, int position) {
+        JobModel job = jobList.get(position);
+
+        // Set job details in the item view
+        holder.companyNameTextView.setText(job.getCompanyName());
+        holder.jobCategoryTextView.setText(job.getJobCategory());
+        holder.designationTextView.setText(job.getDesignation());
+        holder.skillsTextView.setText(job.getSkills());
+        holder.companyProfilePicImageView.setImageResource(job.getCompanyProfilePic());
+
+        // Apply Button logic
+        holder.applyButton.setOnClickListener(v -> {
+            holder.applyButton.setBackgroundResource(R.drawable.applybtn);
+            holder.applyButton.setTextColor(ContextCompat.getColor(context, R.color.green));
+            holder.applyButton.setText("Applied");
+            holder.applyButton.setEnabled(false);
+
+
+            // Fetch current employee's ID from FirebaseAuth
+            String employeeID = FirebaseAuth.getInstance().getUid(); // Get current employee's Firebase ID
+            if (employeeID == null) {
+                Log.e("JobAdapter", "Employee ID is null");
+                return; // Return if employee ID is not found
+            }
+
+            String jobID = job.getJobID(); // Job ID from JobModel
+            Log.d("NOTI_TAG", "onBindViewHolder: Job ID: " + jobID);
+            String employerID = job.getEmployerID(); // Employer ID from JobModel
+
+            // Fetch employee's name
+            usersRef.child(employeeID).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (snapshot.exists()) {
+                        String employeeName = snapshot.child("name").getValue(String.class);
+
+                        // Fetch job details (job category)
+                        jobsRef.child(jobID).addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot jobSnapshot) {
+                                if (jobSnapshot.exists()) {
+                                    String jobCategory = jobSnapshot.child("jobCategory").getValue(String.class);
+
+                                    // Fetch FCM token for employer
+                                    DatabaseReference employerRef = FirebaseDatabase.getInstance()
+                                            .getReference("jobs")
+                                            .child(employerID)
+                                            .child("fcmToken");
+
+                                    employerRef.get().addOnCompleteListener(fcmTokenTask -> {
+                                        if (fcmTokenTask.isSuccessful()) {
+                                            String fcmToken = fcmTokenTask.getResult().getValue(String.class);
+
+                                            if (fcmToken != null) {
+                                                // Send notification to the employer
+                                                sendNotificationToEmployer(employerID, employeeName, jobCategory);
+
+                                                // Add notification entry in Firebase for the employer
+                                                DatabaseReference notificationsRef = FirebaseDatabase.getInstance()
+                                                        .getReference("Notifications")
+                                                        .child(employerID);
+
+                                                String notificationID = notificationsRef.push().getKey();
+                                                Map<String, Object> notificationData = new HashMap<>();
+                                                notificationData.put("employeeName", employeeName);
+                                                notificationData.put("jobCategory", jobCategory);
+                                                notificationData.put("message", "New job application received!");
+                                                notificationData.put("timestamp", System.currentTimeMillis());
+                                                Gson gson = new Gson();
+                                                String notificationDataString = gson.toJson(notificationData);
+                                                try {
+                                                    FcmSender.sendNotification(fcmToken, notificationDataString);
+                                                } catch (Exception e) {
+                                                    throw new RuntimeException(e);
+                                                }
+
+                                                if (notificationID != null) {
+                                                    notificationsRef.child(notificationID).setValue(notificationData)
+                                                            .addOnSuccessListener(aVoid -> {
+                                                                // Successfully added notification for employer
+                                                                Log.d("JobAdapter", "Notification sent to employer: " + employerID);
+                                                            })
+                                                            .addOnFailureListener(e -> {
+                                                                Log.e("JobAdapter", "Failed to send notification: " + e.getMessage());
+                                                            });
+                                                }
+                                            } else {
+                                                Log.e("JobAdapter", "FCM token for employer is null");
+                                            }
+                                        } else {
+                                            Log.e("JobAdapter", "Failed to fetch FCM token: " + fcmTokenTask.getException());
+                                        }
+                                    });
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
+                                Log.e("JobAdapter", "Failed to fetch job data: " + error.getMessage());
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e("JobAdapter", "Failed to fetch employee data: " + error.getMessage());
+                }
+            });
+        });
+
+
+    }
+
+    @Override
+    public int getItemCount() {
+        return jobList.size();
+    }
+
+    public static class JobViewHolder extends RecyclerView.ViewHolder {
+        TextView companyNameTextView, jobCategoryTextView, designationTextView, skillsTextView;
+        ImageView companyProfilePicImageView;
+        Button applyButton;
+
+        public JobViewHolder(@NonNull View itemView) {
+            super(itemView);
+            companyNameTextView = itemView.findViewById(R.id.companyName);
+            jobCategoryTextView = itemView.findViewById(R.id.jobTitle);
+            designationTextView = itemView.findViewById(R.id.designation2);
+            skillsTextView = itemView.findViewById(R.id.skills2);
+            companyProfilePicImageView = itemView.findViewById(R.id.companylogo);
+            applyButton = itemView.findViewById(R.id.applybtn);
+        }
+    }
+
+    // Method to send FCM Notification to the Employer
+    private void sendNotificationToEmployer(String employerID, String employeeName, String jobCategory) {
+        if (!isPermissionGranted) {
+            Log.d("NotificationPermission", "Notification permission not granted");
+            return;
+        }
+        // Fetch employer's FCM token from Firebase
+        usersRef.child(employerID).child("fcmToken").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String employerToken = snapshot.getValue(String.class);
+
+                    // Create notification data payload
+                    Map<String, String> notificationData = new HashMap<>();
+                    notificationData.put("employeeName", employeeName);
+                    notificationData.put("jobCategory", jobCategory);
+                    notificationData.put("message", employeeName + " applied for the job: " + jobCategory);
+
+                    // Call the FCM sender class to send the notification
+                    try {
+                        FcmSender.sendNotification(employerToken, notificationData.toString());
+                    } catch (Exception e) {
+                        Log.d("NOTI_TAG", "onDataChange: Error: " + e.getMessage());
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("JobAdapter", "Failed to fetch employer token: " + error.getMessage());
+            }
+        });
+    }
+
+}
