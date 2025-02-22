@@ -12,6 +12,8 @@ import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,14 +62,27 @@ public class JobFormAdapter extends RecyclerView.Adapter<JobFormAdapter.JobViewH
     }
 
     public void updateJob(int position, JobModel updatedJob) {
-        jobList.set(position, updatedJob);
-        notifyItemChanged(position);
+        jobList.set(position, updatedJob); // Update the job locally
+        notifyItemChanged(position); // Notify the adapter about the change
+
+        // Update the job in Firebase
+        DatabaseReference jobRef = FirebaseDatabase.getInstance().getReference("jobs").child(updatedJob.getJobID());
+        jobRef.setValue(updatedJob); // Update the job in the database
     }
 
     public void deleteJob(int position) {
+        JobModel jobToDelete = jobList.get(position);
+
+        // Remove the job from the local list
         jobList.remove(position);
         notifyItemRemoved(position);
+
+        // Remove the job from Firebase
+        DatabaseReference jobRef = FirebaseDatabase.getInstance().getReference("jobs").child(jobToDelete.getJobID());
+        jobRef.removeValue();  // Remove the job from the database
     }
+
+
 
     public static class JobViewHolder extends RecyclerView.ViewHolder {
         TextView companyName, jobCategory, designation, skills;

@@ -20,7 +20,7 @@
             android:id="@+id/company_profile_pic"
             android:layout_width="50dp"
             android:layout_height="50dp"
-            android:src="@drawable/profilephoto" />
+            android:src="@drawable/cc_logo4" />
 
         <TextView
             android:id="@+id/company_name"

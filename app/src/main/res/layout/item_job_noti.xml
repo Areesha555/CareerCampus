@@ -61,7 +61,7 @@
                 android:fontFamily="@font/ar_one_sans"
                 android:text="Accept"
                 android:textColor="@color/white"
-                android:background="@drawable/accepbtn"
+                android:background="@drawable/login_btn"
                 android:textAllCaps="false"
                 android:textSize="17dp"
                 app:layout_constraintStart_toStartOf="parent"

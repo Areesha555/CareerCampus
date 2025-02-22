@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -25,6 +27,7 @@ public class HomeFragment extends Fragment {
     private JobAdapter jobAdapter;
     private List<JobModel> jobList = new ArrayList<>();  // Use JobModel here
     private static final int NOTIFICATION_PERMISSION_CODE = 123;
+    private Button applybtn;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -34,6 +37,7 @@ public class HomeFragment extends Fragment {
         // Initialize RecyclerView
         recyclerView = view.findViewById(R.id.jobRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+
 
         // Fetch jobs from Firebase
         DatabaseReference jobsRef = FirebaseDatabase.getInstance().getReference("jobs");

@@ -4,6 +4,9 @@ public class NotificationModel {
     private String jobTitle;
     private String status;  // "Accepted" or "Rejected"
     private String message;
+    public NotificationModel() {
+    }
+
 
     public NotificationModel(String jobTitle, String status, String message) {
         this.jobTitle = jobTitle;

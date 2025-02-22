@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import com.example.careercampus.databinding.EmployeeBinding;
@@ -22,10 +23,14 @@ import com.example.careercampus.ProfileFragment;
 import com.example.careercampus.R;
 import com.example.careercampus.databinding.ActivityMainBinding;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 public class EmployeeActivity extends AppCompatActivity {
     EmployeeBinding binding;
     boolean isLoggedIn = false;
+    private DatabaseReference databaseReference;
 
 
     @Override
@@ -40,6 +45,26 @@ public class EmployeeActivity extends AppCompatActivity {
         replaceFragment(new HomeFragment());
 
         isLoggedIn = FirebaseAuth.getInstance().getCurrentUser() != null;
+        databaseReference = FirebaseDatabase.getInstance().getReference("Users");
+        String userId = FirebaseAuth.getInstance().getUid();
+
+        if (userId != null) {
+            // Generate the FCM token
+            FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
+                if (!task.isSuccessful()) {
+                    // Handle failure
+                    Log.w("FCM", "Fetching FCM registration token failed", task.getException());
+                    return;
+                }
+
+                // Get the generated FCM token
+                String fcmToken = task.getResult();
+
+                // Save the token to Firebase under the user's data
+                saveFcmTokenToDatabase(userId, fcmToken);
+            });
+        }
+
 
         // Set image resource
 
@@ -90,6 +115,19 @@ public class EmployeeActivity extends AppCompatActivity {
         fragmentTransaction.replace(R.id.frame_layout, fragment);
         fragmentTransaction.setReorderingAllowed(true);
         fragmentTransaction.commit();
+    }
+    private void saveFcmTokenToDatabase(String userId, String fcmToken) {
+        if (fcmToken != null) {
+            // Save token under the "fcmToken" node for the specific user
+            databaseReference.child(userId).child("fcmToken").setValue(fcmToken)
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            Log.d("FCM", "FCM token saved successfully!");
+                        } else {
+                            Log.w("FCM", "Failed to save FCM token", task.getException());
+                        }
+                    });
+        }
     }
 
 

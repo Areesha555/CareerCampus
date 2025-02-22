@@ -38,7 +38,7 @@ public class JobNotiAdapter extends RecyclerView.Adapter<JobNotiAdapter.JobAppli
         holder.jobCategoryTextView.setText("Job Category: " + application.getJobCategory());
 
         // Display timestamp (if you want to show the exact time)
-        String timestamp = new java.text.SimpleDateFormat("MM/dd/yyyy HH:mm:ss")
+        String timestamp = new java.text.SimpleDateFormat("MM/dd/yyyy HH:mm")
                 .format(new java.util.Date(application.getTimestamp()));
         holder.timestampTextView.setText("Applied on: " + timestamp);
 
@@ -59,6 +59,11 @@ public class JobNotiAdapter extends RecyclerView.Adapter<JobNotiAdapter.JobAppli
     public int getItemCount() {
         return jobApplicationList.size();
     }
+    public void addNewJobApplication(EmployerNotificationModel newApplication) {
+        jobApplicationList.add(0, newApplication);
+        notifyItemInserted(0);
+    }
+
 
     static class JobApplicationViewHolder extends RecyclerView.ViewHolder {
         TextView applicantNameTextView;

@@ -71,13 +71,13 @@ public class employerHomeFragment extends Fragment {
         jobFormAdapter = new JobFormAdapter(jobList, new JobFormAdapter.OnJobActionListener() {
             @Override
             public void onEditJob(int position) {
-                showJobFormDialog(position);
+                showJobFormDialog(position); // Open edit dialog
             }
 
             @Override
             public void onDeleteJob(int position) {
-                jobList.remove(position);
-                jobFormAdapter.notifyItemRemoved(position);
+                // Call deleteJob method in the adapter to handle deletion
+                jobFormAdapter.deleteJob(position);
             }
         });
 
@@ -102,6 +102,7 @@ public class employerHomeFragment extends Fragment {
 
         AlertDialog dialog = builder.create();
 
+        // If editing an existing job, populate the fields
         if (position != -1) {
             JobModel job = jobList.get(position);
             jobCategoryInput.setText(job.getJobCategory());
@@ -113,39 +114,35 @@ public class employerHomeFragment extends Fragment {
             String jobCategory = jobCategoryInput.getText().toString();
             String designation = designationInput.getText().toString();
             String skills = skillsInput.getText().toString();
-            String jobID = FirebaseDatabase.getInstance().getReference("jobs").push().getKey();
-            String employerID = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
             if (!jobCategory.isEmpty() && !designation.isEmpty() && !skills.isEmpty()) {
-                // Create a new JobModel instance
-                JobModel newJob = new JobModel(  jobID, employerID,"Company Name", R.drawable.profilephoto, jobCategory, designation, skills);
+                String jobID = (position == -1) ? FirebaseDatabase.getInstance().getReference("jobs").push().getKey() : jobList.get(position).getJobID();
+                String employerID = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
-                // Get a reference to Firebase Realtime Database
-                DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("jobs");
+                JobModel updatedJob = new JobModel(jobID, employerID, "Company Name", R.drawable.cc_logo4, jobCategory, designation, skills);
 
-                // Generate a unique key for each job
-                String jobId = databaseReference.push().getKey();
-                if (jobId != null) {
-                    // Store the new job in the database
-                    databaseReference.child(jobId).setValue(newJob)
+                // Update existing job or add a new one
+                if (position != -1) {
+                    jobFormAdapter.updateJob(position, updatedJob); // Update the job locally and in Firebase
+                } else {
+                    DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("jobs");
+                    databaseReference.child(jobID).setValue(updatedJob)
                             .addOnCompleteListener(task -> {
                                 if (task.isSuccessful()) {
-                                    Toast.makeText(context, "Job saved successfully!", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(getContext(), "Job saved successfully!", Toast.LENGTH_SHORT).show();
                                     dialog.dismiss();
                                 } else {
-                                    Toast.makeText(context, "Failed to save job. Try again.", Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(getContext(), "Failed to save job. Try again.", Toast.LENGTH_SHORT).show();
                                 }
                             });
-                } else {
-                    Toast.makeText(context, "Failed to generate job ID.", Toast.LENGTH_SHORT).show();
                 }
             } else {
-                Toast.makeText(context, "All fields are required!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "All fields are required!", Toast.LENGTH_SHORT).show();
             }
         });
 
-
         dialog.show();
     }
+
 }
 

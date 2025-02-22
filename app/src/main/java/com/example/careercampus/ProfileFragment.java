@@ -156,6 +156,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void saveProfileData() {
+
         String name = binding.nameInput.getText().toString().trim();
         String age = binding.ageInput.getText().toString().trim();
         String qualifications = binding.qualificationsInput.getText().toString().trim();

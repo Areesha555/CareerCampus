@@ -77,8 +77,7 @@ public class Login extends AppCompatActivity {
                 img.setVisibility(View.GONE);
             }
         });
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
+
     }
     private void setKeyboardVisibilityListener() {
         final View activityRootView = findViewById(android.R.id.content);

@@ -12,6 +12,8 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -24,9 +26,10 @@ import java.util.List;
 public class employerNotiFragment extends Fragment {
 
     private RecyclerView recyclerView;
-    private NotificationAdapter adapter;
-    private List<NotificationModel> notificationList;
+    private JobNotiAdapter adapter; // Use the correct adapter name
+    private List<EmployerNotificationModel> notificationList; // Correct model class
     private DatabaseReference notificationsRef;
+    private FirebaseAuth auth;
 
     @Nullable
     @Override
@@ -35,32 +38,50 @@ public class employerNotiFragment extends Fragment {
 
         recyclerView = view.findViewById(R.id.jobnotiRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+
         notificationList = new ArrayList<>();
-        adapter = new NotificationAdapter(notificationList);
+        adapter = new JobNotiAdapter(notificationList, getContext()); // Pass both the list and context to the adapter
         recyclerView.setAdapter(adapter);
 
-        String employerID = "currentEmployerID"; // Replace with actual employer ID
-        notificationsRef = FirebaseDatabase.getInstance().getReference("Notifications").child(employerID);
+        // Get Firebase Authentication instance
+        auth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = auth.getCurrentUser();
 
-        // Fetch notifications from Firebase
-        notificationsRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                notificationList.clear();
-                for (DataSnapshot notificationSnapshot : snapshot.getChildren()) {
-                    NotificationModel notification = notificationSnapshot.getValue(NotificationModel.class);
-                    notificationList.add(notification);
+        if (currentUser != null) {
+            String currentEmployerID = currentUser.getUid(); // Get current user's UID
+
+            // Reference to the current employer's notifications in the database
+            notificationsRef = FirebaseDatabase.getInstance().getReference("Users")
+                    .child(currentEmployerID).child("Notifications");
+
+            // Fetch notifications from Firebase
+            notificationsRef.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    notificationList.clear();
+                    List<EmployerNotificationModel> tempList = new ArrayList<>();
+                    for (DataSnapshot notificationSnapshot : snapshot.getChildren()) {
+                        EmployerNotificationModel notification = notificationSnapshot.getValue(EmployerNotificationModel.class); // Correct model class
+                        if (notification != null) {
+                            tempList.add(notification);
+                        }
+                    }
+                    for (int i = tempList.size() - 1; i >= 0; i--) {
+                        notificationList.add(tempList.get(i));
+                    }
+                    adapter.notifyDataSetChanged();
+                    recyclerView.scrollToPosition(0);
                 }
-                adapter.notifyDataSetChanged();
-            }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("NotificationFragment", "Failed to fetch notifications: " + error.getMessage());
-            }
-        });
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    Log.e("NotificationFragment", "Failed to fetch notifications: " + error.getMessage());
+                }
+            });
+        } else {
+            Log.e("NotificationFragment", "No authenticated user found");
+        }
 
         return view;
     }
 }
-
