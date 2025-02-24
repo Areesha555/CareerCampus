@@ -126,6 +126,7 @@ public class JobAdapter extends RecyclerView.Adapter<JobAdapter.JobViewHolder> {
                                                 String notificationID = notificationsRef.push().getKey();
                                                 Map<String, Object> notificationData = new HashMap<>();
                                                 notificationData.put("employeeName", employeeName);
+                                                notificationData.put("employeeID", employeeID);
                                                 notificationData.put("jobCategory", jobCategory);
                                                 notificationData.put("message", "New job application received!");
                                                 notificationData.put("timestamp", System.currentTimeMillis());

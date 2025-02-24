@@ -2,6 +2,8 @@ package com.example.careercampus;
 
 public class EmployerNotificationModel {
     private String employeeName;
+    private String employeeID;
+    private String employerID;
     private String jobCategory;
     private String message;
     private long timestamp;
@@ -10,14 +12,31 @@ public class EmployerNotificationModel {
     public EmployerNotificationModel() {
     }
 
-    public EmployerNotificationModel(String employeeName, String jobCategory,String message, long timestamp) {
+    public EmployerNotificationModel(  String employeeID, String employerID,String employeeName, String jobCategory,String message, long timestamp) {
+        this.employeeID = employeeID;
         this.message = message;
+        this.employerID = employerID;
         this.employeeName = employeeName;
         this.jobCategory = jobCategory;
         this.timestamp = timestamp;
     }
 
     // Getters and setters
+    public String getEmployeeID() {
+        return employerID;
+    }
+    public void setEmployeeID(String employerID) {
+        this.employeeID = employeeID;
+    }
+
+    public String getEmployerID() {
+        return employerID;
+    }
+
+    public void setEmployerID(String employerID) {
+        this.employerID = employerID;
+    }
+
     public String getEmployeeName() {
         return employeeName;
     }
