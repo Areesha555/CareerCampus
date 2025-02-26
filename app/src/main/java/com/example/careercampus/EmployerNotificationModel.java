@@ -23,9 +23,9 @@ public class EmployerNotificationModel {
 
     // Getters and setters
     public String getEmployeeID() {
-        return employerID;
+        return employeeID;
     }
-    public void setEmployeeID(String employerID) {
+    public void setEmployeeID(String employeeID) {
         this.employeeID = employeeID;
     }
 

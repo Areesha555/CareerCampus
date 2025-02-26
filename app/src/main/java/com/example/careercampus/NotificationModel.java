@@ -1,25 +1,47 @@
 package com.example.careercampus;
 
 public class NotificationModel {
-    private String jobTitle;
+    private String jobCategory;
+    private String employeeID;
+    private String employeeName;
     private String status;  // "Accepted" or "Rejected"
     private String message;
+    private long timestamp;
     public NotificationModel() {
     }
 
 
-    public NotificationModel(String jobTitle, String status, String message) {
-        this.jobTitle = jobTitle;
+    public NotificationModel(  String employeeID,String employeeName,String jobCategory, String status, String message) {
+        this.jobCategory = jobCategory;
+        this.employeeID = employeeID;
+        this.employeeName = employeeName;
         this.status = status;
+        this.timestamp = timestamp;
         this.message = message;
     }
-
-    public String getJobTitle() {
-        return jobTitle;
+    public String getemployeeID() {
+        return employeeID;
     }
 
-    public void setJobTitle(String jobTitle) {
-        this.jobTitle = jobTitle;
+    public void setemployeeID(String employeeID) {
+        this.employeeID = employeeID;
+    }
+
+    public String getemployeeName() {
+        return employeeName;
+    }
+
+    public void setemployeeName(String employeeName) {
+        this.employeeName = employeeName;
+    }
+
+
+    public String getJobCategory() {
+        return jobCategory;
+    }
+
+    public void setJobCategory(String jobTitle) {
+        this.jobCategory = jobCategory;
     }
 
     public String getStatus() {
@@ -36,5 +58,12 @@ public class NotificationModel {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 }

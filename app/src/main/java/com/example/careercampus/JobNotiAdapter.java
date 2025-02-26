@@ -103,6 +103,11 @@ public class JobNotiAdapter extends RecyclerView.Adapter<JobNotiAdapter.JobAppli
     private void sendNotificationToEmployee(EmployerNotificationModel application, String status) {
         // Fetch the employeeID from the EmployerNotificationModel
         String employeeID = application.getEmployeeID();
+        if (employeeID == null || employeeID.isEmpty()) {
+            Log.e("JobNotiAdapter", "Employee ID is null or empty.");
+            Toast.makeText(context, "Failed to send notification. Employee ID is missing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         String employerID = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         // Fetch the FCM token from the Users node for the employee
