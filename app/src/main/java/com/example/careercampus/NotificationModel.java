@@ -40,7 +40,7 @@ public class NotificationModel {
         return jobCategory;
     }
 
-    public void setJobCategory(String jobTitle) {
+    public void setJobCategory(String jobCategory) {
         this.jobCategory = jobCategory;
     }
 

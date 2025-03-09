@@ -70,6 +70,7 @@ public class JobNotiAdapter extends RecyclerView.Adapter<JobNotiAdapter.JobAppli
         });
     }
 
+
     @Override
     public int getItemCount() {
         return jobApplicationList.size();

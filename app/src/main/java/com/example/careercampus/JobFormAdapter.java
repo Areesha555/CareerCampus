@@ -1,5 +1,6 @@
 package com.example.careercampus;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,22 +68,54 @@ public class JobFormAdapter extends RecyclerView.Adapter<JobFormAdapter.JobViewH
 
         // Update the job in Firebase
         DatabaseReference jobRef = FirebaseDatabase.getInstance().getReference("jobs").child(updatedJob.getJobID());
-        jobRef.setValue(updatedJob); // Update the job in the database
+        jobRef.setValue(updatedJob)
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        // Handle the error, e.g., show a toast or log the error
+                    }
+                });
     }
 
     public void deleteJob(int position) {
-        JobModel jobToDelete = jobList.get(position);
+        if (position < 0 || position >= jobList.size()) {
+            Log.e("DeleteJobError", "Invalid position: " + position);
+            return;
+        }
 
-        // Remove the job from the local list
-        jobList.remove(position);
-        notifyItemRemoved(position);
+        JobModel jobToDelete = jobList.get(position);
+        String jobID = jobToDelete.getJobID();
+
+        if (jobID == null || jobID.isEmpty()) {
+            Log.e("DeleteJobError", "Job ID is null or empty");
+            return;
+        }
+
+        Log.d("DeleteJobDebug", "Attempting to delete job with ID: " + jobID);
 
         // Remove the job from Firebase
-        DatabaseReference jobRef = FirebaseDatabase.getInstance().getReference("jobs").child(jobToDelete.getJobID());
-        jobRef.removeValue();  // Remove the job from the database
+        DatabaseReference jobRef = FirebaseDatabase.getInstance().getReference("jobs").child(jobID);
+        Log.d("FirebaseDebug", "Deleting job from path: " + jobRef.toString());
+
+        jobRef.removeValue()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        Log.d("DeleteJobDebug", "Job deleted successfully from Firebase");
+
+                        // Remove the job from the local list only if Firebase deletion is successful
+                        jobList.remove(position);
+                        Log.d("DeleteJobDebug", "Job removed from local list. New list size: " + jobList.size());
+
+                        // Notify the adapter that the item has been removed
+                        notifyItemRemoved(position);
+                        Log.d("DeleteJobDebug", "RecyclerView notified of item removal at position: " + position);
+                    } else {
+                        Log.e("DeleteJobError", "Failed to delete job from Firebase: " + task.getException().getMessage());
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Log.e("DeleteJobError", "Firebase delete operation failed: " + e.getMessage());
+                });
     }
-
-
 
     public static class JobViewHolder extends RecyclerView.ViewHolder {
         TextView companyName, jobCategory, designation, skills;
